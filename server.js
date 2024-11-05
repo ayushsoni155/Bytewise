@@ -243,6 +243,28 @@ app.get('/order-history', async (req, res) => {
     }
 });
 
+app.post('/feedback-submit', async (req, res) => {
+    const { name, enrolmentID, message } = req.body;
+
+    if (!name || !enrolmentID || !message.trim()) {
+        return res.status(400).json({ error: 'All fields are required.' });
+    }
+
+    const feedbackID = `fb_${Date.now()}`;
+    const query = `INSERT INTO feedback (feedbackID, feedback_enrolmentID, feedback_text) VALUES (?, ?, ?)`;
+
+    let conn;
+    try {
+        conn = await db.getConnection();
+        await conn.query(query, [feedbackID, enrolmentID, message]);
+        res.status(200).json({ message: 'Feedback submitted successfully!' });
+    } catch (err) {
+        console.error('Error inserting feedback:', err);
+        res.status(500).json({ error: 'Database error.' });
+    } finally {
+        if (conn) conn.release();
+    }
+});
 
 
 // Start the server
