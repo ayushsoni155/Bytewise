@@ -285,6 +285,23 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+const cors = require('cors');
+
+// Define the allowed origins
+const corsOptions = {
+  origin: 'https://bytewise24.vercel.app', // Allow only requests from your frontend's URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
+  credentials: true, // Allow cookies, authorization headers, etc.
+};
+
+// Use the CORS middleware with options
+app.use(cors(corsOptions));
+
+// Handle preflight requests (OPTIONS) for all routes
+app.options('*', cors(corsOptions)); // This is to handle preflight requests automatically
+
+
 // Create MySQL Connection Pool for AWS RDS
 const db = mysql.createPool({
     host: 'bytewise24.c7m6iwuy4p5v.ap-south-1.rds.amazonaws.com', // AWS RDS endpoint
