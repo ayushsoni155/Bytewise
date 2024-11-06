@@ -275,115 +275,108 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
-const mysql = require('mysql2/promise'); // Use promise-based API for async/await
+const mysql = require('mysql2/promise');
 const cors = require('cors');
 const Razorpay = require('razorpay');
 const { v4: uuidv4 } = require('uuid');
 
 // Initialize Express app
 const app = express();
-app.use(cors());
-app.use(bodyParser.json());
 
-const cors = require('cors');
-
-// Define the allowed origins
+// CORS options to allow only requests from the frontend domain
 const corsOptions = {
-  origin: 'https://bytewise24.vercel.app', // Allow only requests from your frontend's URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
+  origin: 'https://bytewise24.vercel.app', // Frontend domain
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true, // Allow cookies, authorization headers, etc.
 };
 
-// Use the CORS middleware with options
+// Use CORS middleware with options
 app.use(cors(corsOptions));
 
-// Handle preflight requests (OPTIONS) for all routes
-app.options('*', cors(corsOptions)); // This is to handle preflight requests automatically
+// Body parser middleware
+app.use(bodyParser.json());
 
-
-// Create MySQL Connection Pool for AWS RDS
+// Create MySQL connection pool
 const db = mysql.createPool({
-    host: 'bytewise24.c7m6iwuy4p5v.ap-south-1.rds.amazonaws.com', // AWS RDS endpoint
-    user: 'admin24', // Your AWS RDS username
-    password: 'bytewise24', // Your AWS RDS password
-    database: 'bytewise_db', // Your database name in RDS
-    port: 3306 // Default MySQL port; change if your instance uses a different port
+  host: 'bytewise24.c7m6iwuy4p5v.ap-south-1.rds.amazonaws.com',
+  user: 'admin24',
+  password: 'bytewise24',
+  database: 'bytewise_db',
+  port: 3306,
 });
 
 // Signup route
 app.post('/signup', async (req, res) => {
-    const { enrolmentID, name, sem, phone, password } = req.body;
+  const { enrolmentID, name, sem, phone, password } = req.body;
 
-    if (!name || !enrolmentID || !password || !phone || !sem) {
-        return res.status(400).json({ message: 'All fields are required' });
+  if (!name || !enrolmentID || !password || !phone || !sem) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  try {
+    const conn = await db.getConnection();
+
+    // Check if user exists
+    const [existingUser] = await conn.query('SELECT enrolmentID FROM user_info WHERE enrolmentID = ?', [enrolmentID]);
+    if (existingUser.length > 0) {
+      conn.release();
+      return res.status(400).json({ message: 'Enrolment already in use' });
     }
 
-    try {
-        const conn = await db.getConnection();
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Check if user exists
-        const [existingUser] = await conn.query('SELECT enrolmentID FROM user_info WHERE enrolmentID = ?', [enrolmentID]);
-        if (existingUser.length > 0) {
-            conn.release();
-            return res.status(400).json({ message: 'Enrolment already in use' });
-        }
+    // Insert new user
+    await conn.query(
+      'INSERT INTO user_info (enrolmentID, name, sem, phone, password) VALUES (?, ?, ?, ?, ?)',
+      [enrolmentID, name, sem, phone, hashedPassword]
+    );
 
-        // Hash the password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Insert new user
-        await conn.query(
-            'INSERT INTO user_info (enrolmentID, name, sem, phone, password) VALUES (?, ?, ?, ?, ?)',
-            [enrolmentID, name, sem, phone, hashedPassword]
-        );
-
-        conn.release();
-        res.status(201).json({ message: 'User registered successfully' });
-    } catch (error) {
-        console.error('Server error:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
+    conn.release();
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
-// Login route
+// Login route (example, if needed)
 app.post('/login', async (req, res) => {
-    const { enrolmentID, password } = req.body;
+  const { enrolmentID, password } = req.body;
 
-    if (!enrolmentID || !password) {
-        return res.status(400).json({ message: 'Enrollment ID and password are required' });
+  if (!enrolmentID || !password) {
+    return res.status(400).json({ message: 'Enrollment ID and password are required' });
+  }
+
+  try {
+    const conn = await db.getConnection();
+    const [results] = await conn.query('SELECT * FROM user_info WHERE enrolmentID = ?', [enrolmentID]);
+
+    if (results.length === 0) {
+      conn.release();
+      return res.status(400).json({ message: 'Invalid enrolment ID or password' });
     }
 
-    try {
-        const conn = await db.getConnection();
-        const [results] = await conn.query('SELECT * FROM user_info WHERE enrolmentID = ?', [enrolmentID]);
+    const user = results[0];
+    const isMatch = await bcrypt.compare(password, user.password);
+    conn.release();
 
-        if (results.length === 0) {
-            conn.release();
-            return res.status(400).json({ message: 'Invalid enrolment ID or password' });
-        }
-
-        const user = results[0];
-        const isMatch = await bcrypt.compare(password, user.password);
-        conn.release();
-
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid enrolment ID or password' });
-        }
-
-        const { password: _, ...userData } = user;
-        res.status(200).json({ message: 'Login successful', user: userData });
-    } catch (error) {
-        console.error('Server error:', error);
-        res.status(500).json({ message: 'Server error' });
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid enrolment ID or password' });
     }
+
+    const { password: _, ...userData } = user;
+    res.status(200).json({ message: 'Login successful', user: userData });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
-
-// Other routes...
 
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
