@@ -1,5 +1,4 @@
 import mysql from 'mysql2/promise';
-import bcrypt from 'bcryptjs';
 import Cors from 'cors';
 
 // Initialize CORS middleware
@@ -45,42 +44,36 @@ export default async function handler(req, res) {
 
   // Handle POST requests
   if (req.method === 'POST') {
-    const { enrolmentID, name, sem, phone, password } = req.body;
+    const { enrolmentID, feedback } = req.body;
 
-    // Check if all required fields are present
-    if (!name || !enrolmentID || !password || !phone || !sem) {
-      return res.status(400).json({ message: 'All fields are required' });
+    // Log incoming data for debugging
+    console.log('Received feedback data:', { enrolmentID, feedback });
+
+    // Check if both enrolmentID and feedback are provided
+    if (!enrolmentID || !feedback) {
+      console.error('Missing enrolmentID or feedback:', { enrolmentID, feedback });
+      return res.status(400).json({ message: 'Enrolment ID and feedback are required' });
     }
 
     try {
+      // Get database connection
       const conn = await db.getConnection();
+      console.log('Database connection successful!');
 
-      // Check if the user already exists
-      const [existingUser] = await conn.query(
-        'SELECT enrolmentID FROM user_info WHERE enrolmentID = ?',
-        [enrolmentID]
-      );
+      // Insert feedback into the database
+      const query = 'INSERT INTO feedback (enrolmentID, feedback) VALUES (?, ?)';
+      console.log('Executing SQL query:', query, [enrolmentID, feedback]);
 
-      if (existingUser.length > 0) {
-        conn.release();
-        return res.status(400).json({ message: 'Enrolment ID already in use' });
-      }
-
-      // Hash the password using bcrypt
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      // Insert the new user into the database
-      await conn.query(
-        'INSERT INTO user_info (enrolmentID, name, sem, phone, password) VALUES (?, ?, ?, ?, ?)',
-        [enrolmentID, name, sem, phone, hashedPassword]
-      );
-
+      const [result] = await conn.query(query, [enrolmentID, feedback]);
       conn.release();
-      return res.status(201).json({ message: 'User registered successfully' });
+
+      // Log the result of the query
+      console.log('Feedback submitted:', result);
+
+      res.status(200).json({ message: 'Feedback submitted successfully' });
     } catch (error) {
-      console.error('Server error:', error);
-      return res.status(500).json({ message: 'Server error' });
+      console.error('Error submitting feedback:', error);
+      res.status(500).json({ message: `Server error: ${error.message || error}` });
     }
   }
 
