@@ -1,6 +1,6 @@
-// api/login.js
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
+import nextCors from 'nextjs-cors';
 
 const db = mysql.createPool({
   host: process.env.DB_HOST,
@@ -10,6 +10,13 @@ const db = mysql.createPool({
 });
 
 export default async function handler(req, res) {
+  // Run the CORS middleware
+  await nextCors(req, res, {
+    methods: ['GET', 'POST', 'OPTIONS'],
+    origin: '*', // Allow all origins, or specify an array of allowed origins
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
