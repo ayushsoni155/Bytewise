@@ -4,9 +4,9 @@ import Cors from 'cors';
 // Initialize CORS middleware
 const cors = Cors({
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  origin: 'https://bytewise24.vercel.app', // Adjust frontend URL
-  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers (adjust as needed)
+  origin: 'https://bytewise24.vercel.app', // Set your frontend URL
+  credentials: true, // Allow cookies if needed
 });
 
 // Helper function to run middleware
@@ -37,34 +37,33 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Set the frontend URL
+    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
     return res.status(200).end();
   }
 
-  // Handle POST request (feedback submission)
+  // Handle POST requests
   if (req.method === 'POST') {
     const { enrolmentID, feedback } = req.body;
 
-    // Log the incoming data for debugging
+    // Log incoming data for debugging
     console.log('Received feedback data:', { enrolmentID, feedback });
 
-    // Validate request body
+    // Check if both enrolmentID and feedback are provided
     if (!enrolmentID || !feedback) {
       console.error('Missing enrolmentID or feedback:', { enrolmentID, feedback });
       return res.status(400).json({ message: 'Enrolment ID and feedback are required' });
     }
 
     try {
-      // Try getting a database connection
+      // Get database connection
       const conn = await db.getConnection();
       console.log('Database connection successful!');
 
-      // Prepare the SQL query
+      // Insert feedback into the database
       const query = 'INSERT INTO feedback (enrolmentID, feedback) VALUES (?, ?)';
       console.log('Executing SQL query:', query, [enrolmentID, feedback]);
 
-      // Insert feedback into the database
       const [result] = await conn.query(query, [enrolmentID, feedback]);
       conn.release();
 
