@@ -5,9 +5,9 @@ import Cors from 'cors';
 // Initialize CORS middleware
 const cors = Cors({
   methods: ['POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers (adjust as needed)
-  origin: 'https://bytewise24.vercel.app', // Set your frontend URL (replace with your frontend URL)
-  credentials: true, // Allow cookies if needed
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: 'https://bytewise24.vercel.app',
+  credentials: true,
 });
 
 // Helper function to run middleware
@@ -22,7 +22,7 @@ function runMiddleware(req, res, fn) {
   });
 }
 
-// Setup the database connection pool
+// Set up the database connection pool
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -38,35 +38,50 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Set the frontend URL
-    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
+    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     return res.status(200).end();
   }
 
   // Handle POST request (save order logic)
   if (req.method === 'POST') {
     const { enrolmentID, orderItems, totalPrice, transactionID } = req.body;
+
+    // Ensure all fields are present
+    if (!enrolmentID || !orderItems || !totalPrice || !transactionID) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
     const orderID = uuidv4();
     const orderDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     let conn;
 
     try {
+      // Log incoming data for debugging
+      console.log('Received order data:', { enrolmentID, orderItems, totalPrice, transactionID });
+
       conn = await db.getConnection();
       await conn.beginTransaction();
 
       // Insert the order into the orders table
-      await conn.query(
+      const [orderResult] = await conn.query(
         `INSERT INTO orders (orderID, enrolmentID, transactionID, order_date, total_price) VALUES (?, ?, ?, ?, ?)`,
         [orderID, enrolmentID, transactionID, orderDate, totalPrice]
       );
 
+      // Log result of inserting order
+      console.log('Inserted order:', orderResult);
+
       // Insert the order items into the order_items table
       for (const item of orderItems) {
-        await conn.query(
+        const [itemResult] = await conn.query(
           `INSERT INTO order_items (orderID, productID, quantity) VALUES (?, ?, ?)`,
           [orderID, item.productID, item.quantity]
         );
+
+        // Log result of inserting each item
+        console.log('Inserted order item:', itemResult);
       }
 
       // Commit the transaction
@@ -74,14 +89,20 @@ export default async function handler(req, res) {
       conn.release();
 
       // Return success message with the orderID
-      res.status(200).json({ message: 'Order saved successfully', orderID });
+      return res.status(200).json({ message: 'Order saved successfully', orderID });
+
     } catch (error) {
       if (conn) {
         await conn.rollback();
         conn.release();
       }
-      console.error('Server error:', error);
-      res.status(500).json({ message: 'Server error' });
+
+      // Log error details
+      console.error('Error during order saving:', error.message);
+      console.error('Stack trace:', error.stack);
+
+      // Return error message
+      return res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
