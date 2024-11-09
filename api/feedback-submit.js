@@ -48,24 +48,27 @@ export default async function handler(req, res) {
 
     // Validate request body
     if (!enrolmentID || !feedback) {
+      console.error('Missing enrolmentID or feedback:', { enrolmentID, feedback });
       return res.status(400).json({ message: 'Enrolment ID and feedback are required' });
     }
 
     try {
       const conn = await db.getConnection();
+      console.log('Database connection successful!'); // Log successful connection
 
       // Insert feedback into the database
-      await conn.query(
+      const result = await conn.query(
         'INSERT INTO feedback (enrolmentID, feedback) VALUES (?, ?)',
         [enrolmentID, feedback]
       );
       conn.release();
 
-      // Send success response
+      console.log('Feedback submitted:', result); // Log the result of the insertion
+
       res.status(200).json({ message: 'Feedback submitted successfully' });
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: `Server error: ${error.message || error}` });
     }
   }
 
