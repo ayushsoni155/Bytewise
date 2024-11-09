@@ -1,4 +1,5 @@
 import mysql from 'mysql2/promise';
+import { randomUUID } from 'crypto';  // Using Node's built-in crypto library to generate a random UUID
 
 // Set up your database connection pool
 const db = mysql.createPool({
@@ -42,18 +43,24 @@ export default async function handler(req, res) {
     // Log incoming data
     console.log('Received data:', { enrolmentID, feedback });
 
+    // Generate a random feedbackID using UUID (you can also use any other random string generation method)
+    const feedbackID = randomUUID();
+
+    // Log the random feedbackID
+    console.log('Generated feedbackID:', feedbackID);
+
     // Get a connection from the database
     const conn = await db.getConnection();
 
     // Log the connection status
     console.log('Database connection established.');
 
-    // Insert the feedback into the database
+    // Insert the feedback into the database, including the generated feedbackID
     const [result] = await conn.query(
-      'INSERT INTO feedback (feedback_enrolmentID, feedback_text) VALUES (?, ?)',
-      [enrolmentID, feedback]
+      'INSERT INTO feedback (feedbackID, feedback_enrolmentID, feedback_text) VALUES (?, ?, ?)',
+      [feedbackID, enrolmentID, feedback]
     );
-    
+
     // Log the result of the query
     console.log('Feedback inserted:', result);
 
