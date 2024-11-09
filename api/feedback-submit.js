@@ -4,9 +4,9 @@ import Cors from 'cors';
 // Initialize CORS middleware
 const cors = Cors({
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers (adjust as needed)
-  origin: 'https://bytewise24.vercel.app', // Set your frontend URL (replace with your frontend URL)
-  credentials: true, // Allow cookies if needed
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: 'https://bytewise24.vercel.app', // Adjust frontend URL
+  credentials: true,
 });
 
 // Helper function to run middleware
@@ -37,8 +37,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Set the frontend URL
-    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
+    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     return res.status(200).end();
   }
 
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { enrolmentID, feedback } = req.body;
 
-    // Check if both enrolmentID and feedback are provided
+    // Validate request body
     if (!enrolmentID || !feedback) {
       return res.status(400).json({ message: 'Enrolment ID and feedback are required' });
     }
