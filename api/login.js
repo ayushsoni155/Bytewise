@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   // Run the CORS middleware
   await nextCors(req, res, {
     methods: ['GET', 'POST', 'OPTIONS'],
-    origin: '*', // Allow all origins, or specify an array of allowed origins
+    origin: 'https://bytewise24.vercel.app', // Allow all origins, or specify an array of allowed origins
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
