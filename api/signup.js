@@ -1,12 +1,13 @@
 import mysql from 'mysql2/promise';
+import bcrypt from 'bcryptjs';
 import Cors from 'cors';
 
 // Initialize CORS middleware
 const cors = Cors({
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers (adjust as needed)
+  methods: ['GET', 'POST', 'OPTIONS'], // Allow GET, POST, OPTIONS methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers
   origin: 'https://bytewise24.vercel.app', // Set your frontend URL
-  credentials: true, // Allow cookies if needed
+  credentials: true, // Allow credentials if needed
 });
 
 // Helper function to run middleware
@@ -21,7 +22,7 @@ function runMiddleware(req, res, fn) {
   });
 }
 
-// Setup the database connection pool
+// Set up database connection pool
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -30,53 +31,59 @@ const db = mysql.createPool({
 });
 
 export default async function handler(req, res) {
-  // Enable CORS for this API route
-  await runMiddleware(req, res, cors);
-
-  // Handle OPTIONS request (for preflight CORS check)
+  // Handle preflight (OPTIONS) request
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Set the frontend URL
-    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
-    return res.status(200).end();
+    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Your frontend URL
+    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials
+    return res.status(200).end(); // Respond with 200 to allow the request
   }
 
-  // Handle POST requests
-  if (req.method === 'POST') {
-    const { enrolmentID, feedback } = req.body;
-
-    // Log incoming data for debugging
-    console.log('Received feedback data:', { enrolmentID, feedback });
-
-    // Check if both enrolmentID and feedback are provided
-    if (!enrolmentID || !feedback) {
-      console.error('Missing enrolmentID or feedback:', { enrolmentID, feedback });
-      return res.status(400).json({ message: 'Enrolment ID and feedback are required' });
-    }
-
-    try {
-      // Get database connection
-      const conn = await db.getConnection();
-      console.log('Database connection successful!');
-
-      // Insert feedback into the database
-      const query = 'INSERT INTO feedback (enrolmentID, feedback) VALUES (?, ?)';
-      console.log('Executing SQL query:', query, [enrolmentID, feedback]);
-
-      const [result] = await conn.query(query, [enrolmentID, feedback]);
-      conn.release();
-
-      // Log the result of the query
-      console.log('Feedback submitted:', result);
-
-      res.status(200).json({ message: 'Feedback submitted successfully' });
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-      res.status(500).json({ message: `Server error: ${error.message || error}` });
-    }
-  }
+  // Enable CORS for other requests
+  await runMiddleware(req, res, cors);
 
   // Handle non-POST requests
-  return res.status(405).json({ message: 'Method Not Allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+
+  const { enrolmentID, name, sem, phone, password } = req.body;
+
+  // Check for missing fields
+  if (!name || !enrolmentID || !password || !phone || !sem) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  try {
+    // Get database connection
+    const conn = await db.getConnection();
+
+    // Check if user already exists
+    const [existingUser] = await conn.query(
+      'SELECT enrolmentID FROM user_info WHERE enrolmentID = ?',
+      [enrolmentID]
+    );
+
+    if (existingUser.length > 0) {
+      conn.release();
+      return res.status(400).json({ message: 'Enrolment ID already in use' });
+    }
+
+    // Hash the password using bcrypt
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Insert the new user into the database
+    await conn.query(
+      'INSERT INTO user_info (enrolmentID, name, sem, phone, password) VALUES (?, ?, ?, ?, ?)',
+      [enrolmentID, name, sem, phone, hashedPassword]
+    );
+
+    conn.release();
+    return res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    console.error('Server error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
 }
