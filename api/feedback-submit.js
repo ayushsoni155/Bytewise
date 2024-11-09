@@ -8,7 +8,7 @@ const db = mysql.createPool({
   database: process.env.DB_NAME,
 });
 
-// Helper function to run CORS middleware
+// Helper function to set CORS headers
 function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Replace with your frontend URL
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Allow methods
@@ -33,30 +33,44 @@ export default async function handler(req, res) {
 
   const { enrolmentID, feedback } = req.body;
 
+  // Check if enrolmentID and feedback are provided
   if (!enrolmentID || !feedback) {
     return res.status(400).json({ message: 'Enrolment ID and feedback are required' });
   }
 
   try {
+    // Log incoming data
+    console.log('Received data:', { enrolmentID, feedback });
+
+    // Get a connection from the database
     const conn = await db.getConnection();
 
-    // Log query and params for debugging
-    console.log('Inserting feedback:', { enrolmentID, feedback });
+    // Log the connection status
+    console.log('Database connection established.');
 
-    // Attempt to insert the feedback into the database
-    await conn.query(
-      'INSERT INTO feedback (enrolmentID, feedback) VALUES (?, ?)',
+    // Insert the feedback into the database
+    const [result] = await conn.query(
+      'INSERT INTO feedback (feedback_enrolmentID, feedback_text) VALUES (?, ?)',
       [enrolmentID, feedback]
     );
+    
+    // Log the result of the query
+    console.log('Feedback inserted:', result);
 
+    // Release the connection back to the pool
     conn.release();
+
+    // Send success response
     return res.status(200).json({ message: 'Feedback submitted successfully' });
   } catch (error) {
-    // Log error for debugging
-    console.error('Error inserting feedback:', error.message);
+    // Log detailed error information
+    console.error('Error during feedback submission:', error.message);
     console.error('Stack trace:', error.stack);
 
-    // Return a generic server error response
-    return res.status(500).json({ message: 'Server error' });
+    // Respond with a 500 error and a generic message
+    return res.status(500).json({
+      message: 'Server error',
+      error: error.message,  // Include error message in the response for debugging purposes
+    });
   }
 }
