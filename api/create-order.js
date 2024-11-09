@@ -51,7 +51,7 @@ export default async function handler(req, res) {
 
     // Razorpay order options
     const options = {
-      amount: amount * 100, // Convert amount to paise (Razorpay expects amount in paise)
+      amount: amount, // Convert amount to paise (Razorpay expects amount in paise)
       currency: 'INR', // Set currency to INR
       receipt: 'receipt_order_' + Math.floor(Math.random() * 1000000), // Random receipt ID
     };
