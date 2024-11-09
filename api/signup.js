@@ -3,12 +3,7 @@ import bcrypt from 'bcryptjs';
 import Cors from 'cors';
 
 // Initialize the CORS middleware
-const cors = Cors({
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'], // Allow Content-Type header in the request
-  origin: 'https://bytewise24.vercel.app', // Replace with your actual frontend URL
-  credentials: true, // Allow cookies (if required by your app)
-});
+const cors = Cors();
 
 // Helper function to run the middleware
 function runMiddleware(req, res, fn) {
