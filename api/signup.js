@@ -4,8 +4,10 @@ import Cors from 'cors';
 
 // Initialize CORS middleware
 const cors = Cors({
-  methods: ['GET', 'POST', 'OPTIONS'], // Allow GET, POST, and OPTIONS methods
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'], // Allow 'Content-Type' header in the request
   origin: 'https://bytewise24.vercel.app', // Replace with your actual frontend URL
+  credentials: true, // Allow credentials (cookies, authorization headers)
 });
 
 // Helper function to run middleware
@@ -31,6 +33,11 @@ const db = mysql.createPool({
 export default async function handler(req, res) {
   // Enable CORS for this API route
   await runMiddleware(req, res, cors);
+
+  // Handle OPTIONS requests (preflight request)
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   // Handle non-POST requests
   if (req.method !== 'POST') {
