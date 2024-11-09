@@ -75,9 +75,11 @@ export default async function handler(req, res) {
 
       // Insert the order items into the order_items table
       for (const item of orderItems) {
+        const orderItemsID = uuidv4();  // Generate a unique ID for each order item
+
         const [itemResult] = await conn.query(
-          `INSERT INTO order_items (orderID, subject_code, item_quantity, item_price) VALUES (?, ?, ?, ?)`,
-          [orderID, item.Subject_code, item.item_quantity, item.item_price]
+          `INSERT INTO order_items (order_itemsID, orderID, subject_code, item_quantity, item_price) VALUES (?, ?, ?, ?, ?)`,
+          [orderItemsID, orderID, item.Subject_code, item.item_quantity, item.item_price]
         );
 
         // Log result of inserting each item
