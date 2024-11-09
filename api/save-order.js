@@ -66,7 +66,7 @@ export default async function handler(req, res) {
 
       // Insert the order into the orders table
       const [orderResult] = await conn.query(
-        `INSERT INTO orders (orderID, enrolmentID, transactionID, order_date, total_price) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO bytewise_db.orders (orderID, enrolmentID, transactionID, order_date, total_price) VALUES (?, ?, ?, ?, ?)`,
         [orderID, enrolmentID, transactionID, orderDate, totalPrice]
       );
 
@@ -76,8 +76,8 @@ export default async function handler(req, res) {
       // Insert the order items into the order_items table
       for (const item of orderItems) {
         const [itemResult] = await conn.query(
-          `INSERT INTO order_items (orderID, productID, quantity) VALUES (?, ?, ?)`,
-          [orderID, item.productID, item.quantity]
+          `INSERT INTO order_items (orderID, subject_code, item_quantity, item_price) VALUES (?, ?, ?, ?)`,
+          [orderID, item.Subject_code, item.item_quantity, item.item_price]
         );
 
         // Log result of inserting each item
