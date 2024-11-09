@@ -46,6 +46,9 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { enrolmentID, feedback } = req.body;
 
+    // Log the incoming data for debugging
+    console.log('Received feedback data:', { enrolmentID, feedback });
+
     // Validate request body
     if (!enrolmentID || !feedback) {
       console.error('Missing enrolmentID or feedback:', { enrolmentID, feedback });
@@ -53,17 +56,20 @@ export default async function handler(req, res) {
     }
 
     try {
+      // Try getting a database connection
       const conn = await db.getConnection();
-      console.log('Database connection successful!'); // Log successful connection
+      console.log('Database connection successful!');
+
+      // Prepare the SQL query
+      const query = 'INSERT INTO feedback (enrolmentID, feedback) VALUES (?, ?)';
+      console.log('Executing SQL query:', query, [enrolmentID, feedback]);
 
       // Insert feedback into the database
-      const result = await conn.query(
-        'INSERT INTO feedback (enrolmentID, feedback) VALUES (?, ?)',
-        [enrolmentID, feedback]
-      );
+      const [result] = await conn.query(query, [enrolmentID, feedback]);
       conn.release();
 
-      console.log('Feedback submitted:', result); // Log the result of the insertion
+      // Log the result of the query
+      console.log('Feedback submitted:', result);
 
       res.status(200).json({ message: 'Feedback submitted successfully' });
     } catch (error) {
