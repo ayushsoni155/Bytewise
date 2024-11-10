@@ -54,16 +54,25 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Establish a connection to the database
     const conn = await db.getConnection();
+
+    // Query for fetching the order history
     const [orders] = await conn.query(
       'SELECT * FROM orders WHERE enrolmentID = ? ORDER BY order_date DESC',
       [enrolmentId]
     );
+
+    // Release the connection back to the pool
     conn.release();
 
-    return res.status(200).json(orders); // Respond with order history data
+    // Return the order history
+    return res.status(200).json(orders);
   } catch (error) {
+    // Log and handle any errors
     console.error('Error fetching order history:', error);
-    return res.status(500).json({ message: 'Server error' });
+
+    // Return server error message with a status code of 500
+    return res.status(500).json({ message: 'Server error, please try again later.' });
   }
 }
