@@ -53,7 +53,8 @@ export default async function handler(req, res) {
     }
 
     const orderID = uuidv4();
-    const orderDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const orderDate = new Date();
+    const formattedOrderDate = orderDate.toISOString().slice(0, 19).replace('T', ' '); // Format as YYYY-MM-DD HH:MM:SS
 
     let conn;
 
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
       // Insert the order into the orders table
       const [orderResult] = await conn.query(
         `INSERT INTO bytewise_db.orders (orderID, enrolmentID, transactionID, order_date, total_price) VALUES (?, ?, ?, ?, ?)`,
-        [orderID, enrolmentID, transactionID, orderDate, totalPrice]
+        [orderID, enrolmentID, transactionID, formattedOrderDate, totalPrice]
       );
 
       // Log result of inserting order
