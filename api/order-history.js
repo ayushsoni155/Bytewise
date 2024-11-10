@@ -3,10 +3,10 @@ import Cors from 'cors';
 
 // Initialize CORS middleware
 const cors = Cors({
-  methods: ['GET', 'POST', 'OPTIONS'], // Allow GET, POST, OPTIONS methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers
-  origin: 'https://bytewise24.vercel.app', // Allow your frontend domain
-  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers (adjust as needed)
+  origin: 'https://bytewise24.vercel.app', // Set your frontend URL
+  credentials: true, // Allow cookies if needed
 });
 
 // Helper function to run middleware
@@ -21,7 +21,7 @@ function runMiddleware(req, res, fn) {
   });
 }
 
-// Database connection pool
+// Setup the database connection pool
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -43,36 +43,37 @@ export default async function handler(req, res) {
   await runMiddleware(req, res, cors);
 
   // Handle GET requests for order history
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+  if (req.method === 'GET') {
+    const { enrolmentId } = req.query;
+
+    if (!enrolmentId) {
+      return res.status(400).json({ message: 'Enrolment ID is required' });
+    }
+
+    try {
+      // Establish a connection to the database
+      const conn = await db.getConnection();
+
+      // Query for fetching the order history
+      const [orders] = await conn.query(
+        'SELECT * FROM orders WHERE enrolmentID = ? ORDER BY order_date DESC',
+        [enrolmentId]
+      );
+
+      // Release the connection back to the pool
+      conn.release();
+
+      // Return the order history
+      return res.status(200).json(orders);
+    } catch (error) {
+      // Log and handle any errors
+      console.error('Error fetching order history:', error);
+
+      // Return server error message with a status code of 500
+      return res.status(500).json({ message: 'Server error, please try again later.' });
+    }
   }
 
-  const { enrolmentId } = req.query;
-
-  if (!enrolmentId) {
-    return res.status(400).json({ message: 'Enrolment ID is required' });
-  }
-
-  try {
-    // Establish a connection to the database
-    const conn = await db.getConnection();
-
-    // Query for fetching the order history
-    const [orders] = await conn.query(
-      'SELECT * FROM orders WHERE enrolmentID = ? ORDER BY order_date DESC',
-      [enrolmentId]
-    );
-
-    // Release the connection back to the pool
-    conn.release();
-
-    // Return the order history
-    return res.status(200).json(orders);
-  } catch (error) {
-    // Log and handle any errors
-    console.error('Error fetching order history:', error);
-
-    // Return server error message with a status code of 500
-    return res.status(500).json({ message: 'Server error, please try again later.' });
-  }
+  // Handle any other method (e.g., POST, PUT, DELETE)
+  return res.status(405).json({ message: 'Method Not Allowed' });
 }
