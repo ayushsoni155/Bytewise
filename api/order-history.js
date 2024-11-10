@@ -1,46 +1,35 @@
-// server.js (Express.js Backend)
+// api/order-history.js
+import mysql from 'mysql2/promise';
 
-const express = require('express');
-const mongoose = require('mongoose');
-const app = express();
-app.use(express.json());
-
-// Order schema and model
-const orderSchema = new mongoose.Schema({
-  enrolmentID: String,
-  order_id: String,
-  order_date: Date,
-  totalPrice: Number,
-  status: String,
-  orderItems: [
-    {
-      Subject_code: String,
-      item_quantity: Number,
-      item_price: Number,
-    },
-  ],
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
-const Order = mongoose.model('Order', orderSchema);
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
 
-// Fetch order history for a given user
-app.get('/api/order-history', async (req, res) => {
   const { enrolmentID } = req.query;
 
   if (!enrolmentID) {
-    return res.status(400).json({ message: 'enrolmentID is required' });
+    return res.status(400).json({ message: 'Enrolment ID is required' });
   }
 
   try {
-    const orders = await Order.find({ enrolmentID }).sort({ order_date: -1 });
-    res.json(orders);
-  } catch (err) {
-    console.error('Error fetching order history:', err);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-});
+    const conn = await db.getConnection();
+    const [orders] = await conn.query(
+      'SELECT * FROM orders WHERE enrolmentID = ? ORDER BY order_date DESC',
+      [enrolmentID]
+    );
+    conn.release();
 
-// Start server
-app.listen(5000, () => {
-  console.log('Server is running on port 5000');
-});
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
