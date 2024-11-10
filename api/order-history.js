@@ -4,7 +4,7 @@ import Cors from 'cors';
 // Initialize CORS middleware
 const cors = Cors({
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers (adjust as needed)
+  allowedHeaders: ['Content-Type', 'Authorization'],
   origin: 'https://bytewise24.vercel.app', // Set your frontend URL
   credentials: true, // Allow cookies if needed
 });
@@ -34,9 +34,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Allow your frontend URL
-    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies)
-    return res.status(200).end(); // Respond with status 200
+    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    return res.status(200).end();
   }
 
   // Enable CORS for other requests
@@ -46,30 +46,37 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { enrolmentId } = req.query;
 
+    // Ensure enrolmentId is provided
     if (!enrolmentId) {
       return res.status(400).json({ message: 'Enrolment ID is required' });
     }
 
     try {
+      // Log incoming request for debugging
+      console.log('Fetching order history for enrolmentId:', enrolmentId);
+
       // Establish a connection to the database
       const conn = await db.getConnection();
 
-      // Query for fetching the order history
+      // Query to fetch the order history
       const [orders] = await conn.query(
         'SELECT * FROM orders WHERE enrolmentID = ? ORDER BY order_date DESC',
         [enrolmentId]
       );
 
+      // Log the result of the query for debugging
+      console.log('Order history fetched:', orders);
+
       // Release the connection back to the pool
       conn.release();
 
-      // Return the order history
+      // Return the fetched order history
       return res.status(200).json(orders);
     } catch (error) {
-      // Log and handle any errors
+      // Log the error with full details for debugging
       console.error('Error fetching order history:', error);
 
-      // Return server error message with a status code of 500
+      // Return a server error message
       return res.status(500).json({ message: 'Server error, please try again later.' });
     }
   }
