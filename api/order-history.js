@@ -50,10 +50,24 @@ export default async function handler(req, res) {
       'SELECT * FROM orders WHERE enrolmentID = ? ORDER BY order_date DESC',
       [enrolmentID]
     );
+
+    // For each order, fetch the associated order items
+    const ordersWithItems = await Promise.all(orders.map(async (order) => {
+      const [orderItems] = await conn.query(
+        'SELECT * FROM order_items WHERE orderID = ?',
+        [order.orderID]
+      );
+
+      return {
+        ...order,
+        items: orderItems,  // Attach order items to the order
+      };
+    }));
+
     conn.release();
 
-    // Send the orders as the response
-    res.status(200).json(orders);
+    // Send the enhanced orders with item details
+    res.status(200).json(ordersWithItems);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
