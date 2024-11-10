@@ -5,7 +5,7 @@ import Cors from 'cors';
 const cors = Cors({
   methods: ['GET', 'POST', 'OPTIONS'], // Allow GET, POST, OPTIONS methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers
-  origin: 'https://bytewise24.vercel.app', // Your frontend URL (adjust this if different)
+  origin: 'https://bytewise24.vercel.app', // Allow your frontend domain
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
 });
 
@@ -21,7 +21,7 @@ function runMiddleware(req, res, fn) {
   });
 }
 
-// Create the MySQL connection pool
+// Database connection pool
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -34,41 +34,34 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Your frontend URL
-    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials
-    return res.status(200).end(); // Respond with 200 to allow the request
+    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Allow your frontend URL
+    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies)
+    return res.status(200).end(); // Respond with status 200
   }
 
   // Enable CORS for other requests
   await runMiddleware(req, res, cors);
 
-  // Handle non-GET requests
+  // Handle GET requests for order history
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { enrolmentID } = req.query;
+  const { enrolmentId } = req.query;
 
-  // Check if enrolmentID is provided
-  if (!enrolmentID) {
+  if (!enrolmentId) {
     return res.status(400).json({ message: 'Enrolment ID is required' });
   }
 
   try {
-    // Get database connection
     const conn = await db.getConnection();
-
-    // Query orders based on enrolmentID
     const [orders] = await conn.query(
       'SELECT * FROM orders WHERE enrolmentID = ? ORDER BY order_date DESC',
-      [enrolmentID]
+      [enrolmentId]
     );
-
-    // Release the connection after the query
     conn.release();
 
-    // Respond with the orders data
-    return res.status(200).json(orders);
+    return res.status(200).json(orders); // Respond with order history data
   } catch (error) {
     console.error('Error fetching order history:', error);
     return res.status(500).json({ message: 'Server error' });
