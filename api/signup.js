@@ -59,15 +59,26 @@ export default async function handler(req, res) {
     // Get database connection
     const conn = await db.getConnection();
 
-    // Check if user already exists
-    const [existingUser] = await conn.query(
+    // Check if enrolment ID already exists
+    const [existingEnrolment] = await conn.query(
       'SELECT enrolmentID FROM user_info WHERE enrolmentID = ?',
       [enrolmentID]
     );
 
-    if (existingUser.length > 0) {
+    if (existingEnrolment.length > 0) {
       conn.release();
       return res.status(400).json({ message: 'Enrolment ID already in use' });
+    }
+
+    // Check if phone number already exists
+    const [existingPhone] = await conn.query(
+      'SELECT phone FROM user_info WHERE phone = ?',
+      [phone]
+    );
+
+    if (existingPhone.length > 0) {
+      conn.release();
+      return res.status(400).json({ message: 'Phone number already in use' });
     }
 
     // Hash the password using bcrypt
