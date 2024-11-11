@@ -1,5 +1,5 @@
 import mysql from 'mysql2/promise';
-import Cors from 'cors';
+import Cors from 'cors'; 
 
 // Initialize CORS middleware
 const cors = Cors({
