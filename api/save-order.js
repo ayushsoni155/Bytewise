@@ -54,8 +54,12 @@ export default async function handler(req, res) {
 
     const orderID = uuidv4();
     const orderDate = new Date();
-    const formattedOrderDate = orderDate.toISOString().slice(0, 19).replace('T', ' '); // Format as YYYY-MM-DD HH:MM:SS
+    
+    orderDate.setHours(orderDate.getHours() + 5);
+    orderDate.setMinutes(orderDate.getMinutes() + 30);
 
+    // Format theorderDate as 'YYYY-MM-DD HH:MM:SS' for MySQL DATETIME format
+    const formattedOrderDate = feedback_date.toISOString().slice(0, 19).replace('T', ' ');
     let conn;
 
     try {
