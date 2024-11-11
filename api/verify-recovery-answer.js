@@ -3,7 +3,7 @@ import Cors from 'cors';
 const cors = Cors({
   methods: ['POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  origin: 'https://bytewise24.vercel.app', // Replace with your frontend URL
+  origin: 'https://bytewise24.vercel.app', // Your frontend URL
   credentials: true,
 });
 
@@ -19,6 +19,14 @@ function runMiddleware(req, res, fn) {
 }
 
 export default async function handler(req, res) {
+  // Run the CORS middleware first to handle the preflight request
+  await runMiddleware(req, res, cors);
+
+  if (req.method === 'OPTIONS') {
+    // If it's a preflight `OPTIONS` request, simply respond with 200 status
+    return res.status(200).end();
+  }
+
   try {
     if (req.method === 'POST') {
       const { userID, recoveryAnswer } = req.body;
@@ -31,16 +39,15 @@ export default async function handler(req, res) {
       try {
         conn = await db.getConnection(); // Try to get a DB connection
       } catch (dbError) {
-        console.error('Database connection error:', dbError); // Log DB connection issues
+        console.error('Database connection error:', dbError);
         return res.status(500).json({ message: 'Database connection error' });
       }
 
       let results;
       try {
-        // Fetch the recovery answer from the DB
         [results] = await conn.query('SELECT recovery_answer FROM user_info WHERE enrolmentID = ?', [userID]);
       } catch (queryError) {
-        console.error('Query error:', queryError); // Log database query errors
+        console.error('Query error:', queryError);
         return res.status(500).json({ message: 'Database query error' });
       } finally {
         conn.release(); // Always release the connection after usage
@@ -61,7 +68,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ message: 'Method Not Allowed' });
   } catch (error) {
-    console.error('Server error:', error); // Log unexpected errors
+    console.error('Server error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
