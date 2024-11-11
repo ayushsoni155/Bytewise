@@ -14,7 +14,7 @@ function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Replace with your frontend URL
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Allow methods
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Allow headers
-  res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
+  res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.) 
 }
 
 export default async function handler(req, res) {
