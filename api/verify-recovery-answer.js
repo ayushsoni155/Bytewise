@@ -19,23 +19,32 @@ function runMiddleware(req, res, fn) {
 }
 
 export default async function handler(req, res) {
-  await runMiddleware(req, res, cors);
+  try {
+    if (req.method === 'POST') {
+      const { userID, recoveryAnswer } = req.body;
 
-  if (req.method === 'POST') {
-    const { userID, recoveryAnswer } = req.body;
+      if (!userID || !recoveryAnswer) {
+        return res.status(400).json({ message: 'User ID and recovery answer are required' });
+      }
 
-    if (!userID || !recoveryAnswer) {
-      return res.status(400).json({ message: 'User ID and recovery answer are required' });
-    }
+      let conn;
+      try {
+        conn = await db.getConnection(); // Try to get a DB connection
+      } catch (dbError) {
+        console.error('Database connection error:', dbError); // Log DB connection issues
+        return res.status(500).json({ message: 'Database connection error' });
+      }
 
-    try {
-      const conn = await db.getConnection();
-
-      const [results] = await conn.query(
-        'SELECT recovery_answer FROM user_info WHERE enrolmentID = ?',
-        [userID]
-      );
-      conn.release();
+      let results;
+      try {
+        // Fetch the recovery answer from the DB
+        [results] = await conn.query('SELECT recovery_answer FROM user_info WHERE enrolmentID = ?', [userID]);
+      } catch (queryError) {
+        console.error('Query error:', queryError); // Log database query errors
+        return res.status(500).json({ message: 'Database query error' });
+      } finally {
+        conn.release(); // Always release the connection after usage
+      }
 
       if (results.length === 0) {
         return res.status(400).json({ message: 'User not found' });
@@ -48,11 +57,11 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ message: 'Answer verified! You can now reset your password.' });
-    } catch (error) {
-      console.error('Server error:', error);
-      return res.status(500).json({ message: 'Server error' });
     }
-  }
 
-  return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  } catch (error) {
+    console.error('Server error:', error); // Log unexpected errors
+    return res.status(500).json({ message: 'Server error' });
+  }
 }
