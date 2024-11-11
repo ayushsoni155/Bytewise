@@ -43,10 +43,10 @@ export default async function handler(req, res) {
     // Log incoming data
     console.log('Received data:', { enrolmentID, feedback });
 
-    // Generate a random feedbackID using UUID (you can also use any other random string generation method)
+    // Generate a random feedbackID using UUID
     const feedbackID = randomUUID();
     const feedback_date = new Date();
-    const formattedfeedback_date = orderDate.toISOString().slice(0, 19).replace('T', ' '); // Format as YYYY-MM-DD HH:MM:SS
+    const formattedfeedback_date = feedback_date.toISOString().slice(0, 19).replace('T', ' '); // Format as YYYY-MM-DD HH:MM:SS
 
     // Log the random feedbackID
     console.log('Generated feedbackID:', feedbackID);
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
 
     // Insert the feedback into the database, including the generated feedbackID
     const [result] = await conn.query(
-      'INSERT INTO feedback (feedbackID, feedback_enrolmentID, feedback_text,feedback_date) VALUES (?, ?, ?, ?)',
+      'INSERT INTO feedback (feedbackID, feedback_enrolmentID, feedback_text, feedback_date) VALUES (?, ?, ?, ?)',
       [feedbackID, enrolmentID, feedback, formattedfeedback_date]
     );
 
@@ -73,8 +73,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ message: 'Feedback submitted successfully' });
   } catch (error) {
     // Log detailed error information
-    console.error('Error during feedback submission:', error.message);
-    console.error('Stack trace:', error.stack);
+    console.error('Error during feedback submission:', error);
 
     // Respond with a 500 error and a generic message
     return res.status(500).json({
