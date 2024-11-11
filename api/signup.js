@@ -31,70 +31,70 @@ const db = mysql.createPool({
 });
 
 export default async function handler(req, res) {
-  // Handle preflight (OPTIONS) request
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Your frontend URL
-    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials
-    return res.status(200).end(); // Respond with 200 to allow the request
-  }
-
-  // Enable CORS for other requests
-  await runMiddleware(req, res, cors);
-
-  // Handle non-POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  const { enrolmentID, name, sem, phone, password } = req.body;
-
-  // Check for missing fields
-  if (!name || !enrolmentID || !password || !phone || !sem) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
-
-  try {
-    // Get database connection
-    const conn = await db.getConnection();
-
-    // Check if enrolment ID already exists
-    const [existingEnrolment] = await conn.query(
-      'SELECT enrolmentID FROM user_info WHERE enrolmentID = ?',
-      [enrolmentID]
-    );
-
-    if (existingEnrolment.length > 0) {
-      conn.release();
-      return res.status(400).json({ message: 'Enrolment ID already in use' });
+    // Handle preflight (OPTIONS) request
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Your frontend URL
+        res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials
+        return res.status(200).end(); // Respond with 200 to allow the request
     }
 
-    // Check if phone number already exists
-    const [existingPhone] = await conn.query(
-      'SELECT phone FROM user_info WHERE phone = ?',
-      [phone]
-    );
+    // Enable CORS for other requests
+    await runMiddleware(req, res, cors);
 
-    if (existingPhone.length > 0) {
-      conn.release();
-      return res.status(400).json({ message: 'Phone number already in use' });
+    // Handle non-POST requests
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    // Hash the password using bcrypt
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const { enrolmentID, name, sem, phone, password, recoveryQuestion, recoveryAnswer } = req.body;
 
-    // Insert the new user into the database
-    await conn.query(
-      'INSERT INTO user_info (enrolmentID, name, sem, phone, password) VALUES (?, ?, ?, ?, ?)',
-      [enrolmentID, name, sem, phone, hashedPassword]
-    );
+    // Check for missing fields
+    if (!name || !enrolmentID || !password || !phone || !sem || !recoveryQuestion || !recoveryAnswer) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
 
-    conn.release();
-    return res.status(201).json({ message: 'User registered successfully' });
-  } catch (error) {
-    console.error('Server error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
+    try {
+        // Get database connection
+        const conn = await db.getConnection();
+
+        // Check if enrolment ID already exists
+        const [existingEnrolment] = await conn.query(
+            'SELECT enrolmentID FROM user_info WHERE enrolmentID = ?',
+            [enrolmentID]
+        );
+
+        if (existingEnrolment.length > 0) {
+            conn.release();
+            return res.status(400).json({ message: 'Enrolment ID already in use' });
+        }
+
+        // Check if phone number already exists
+        const [existingPhone] = await conn.query(
+            'SELECT phone FROM user_info WHERE phone = ?',
+            [phone]
+        );
+
+        if (existingPhone.length > 0) {
+            conn.release();
+            return res.status(400).json({ message: 'Phone number already in use' });
+        }
+
+        // Hash the password using bcrypt
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Insert the new user into the database, including the recovery question and answer
+        await conn.query(
+            'INSERT INTO user_info (enrolmentID, name, sem, phone, password, recovery_question, recovery_answer) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [enrolmentID, name, sem, phone, hashedPassword, recoveryQuestion, recoveryAnswer]
+        );
+
+        conn.release();
+        return res.status(201).json({ message: 'User registered successfully' });
+    } catch (error) {
+        console.error('Server error:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
 }
