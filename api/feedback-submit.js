@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     // Insert the feedback into the database, including the generated feedbackID
     const [result] = await conn.query(
       'INSERT INTO feedback (feedbackID, feedback_enrolmentID, feedback_text,feedback_date) VALUES (?, ?, ?)',
-      [feedbackID, enrolmentID, feedback]
+      [feedbackID, enrolmentID, feedback, formattedfeedback_date]
     );
 
     // Log the result of the query
