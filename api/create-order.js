@@ -9,7 +9,7 @@ const cors = Cors({
   credentials: true, // Allow cookies if needed
 });
 
-// Helper function to run middleware
+// Helper function to run middleware h
 function runMiddleware(req, res, fn) {
   return new Promise((resolve, reject) => {
     fn(req, res, (result) => {
