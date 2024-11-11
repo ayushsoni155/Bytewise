@@ -6,6 +6,13 @@ const cors = Cors({
   origin: 'https://bytewise24.vercel.app', // Your frontend URL
   credentials: true,
 });
+// Setup the database connection pool
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
 
 function runMiddleware(req, res, fn) {
   return new Promise((resolve, reject) => {
