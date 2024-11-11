@@ -4,9 +4,9 @@ import Cors from 'cors';
 // Initialize CORS middleware
 const cors = Cors({
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers (adjust as needed)
-  origin: 'https://bytewise24.vercel.app', // Set your frontend URL (replace with your frontend URL)
-  credentials: true, // Allow cookies if needed
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: 'https://bytewise24.vercel.app', // Set your frontend URL
+  credentials: true,
 });
 
 // Helper function to run middleware
@@ -30,19 +30,16 @@ const db = mysql.createPool({
 });
 
 export default async function handler(req, res) {
-  // Enable CORS for this API route
   await runMiddleware(req, res, cors);
 
-  // Handle OPTIONS request (for preflight CORS check)
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Set the frontend URL
-    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
+    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     return res.status(200).end();
   }
 
-  // Handle POST request (Forgot Password Verification)
   if (req.method === 'POST') {
     const { enrolmentID, phone } = req.body;
 
@@ -56,9 +53,10 @@ export default async function handler(req, res) {
 
       // Check if the enrolmentID and phone match a record in the database
       const [results] = await conn.query(
-        'SELECT * FROM user_info WHERE enrolmentID = ? AND phone = ?',
+        'SELECT enrolmentID, phone, recovery_question, recovery_answer FROM user_info WHERE enrolmentID = ? AND phone = ?',
         [enrolmentID, phone]
       );
+
       conn.release();
 
       // If no matching records are found
@@ -66,14 +64,19 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'Invalid enrolment ID or phone number' });
       }
 
-      // If a match is found, return a success message
-      res.status(200).json({ message: 'Verification successful! You can now reset your password.' });
+      const user = results[0];
+
+      // If a match is found, return the recovery question
+      return res.status(200).json({
+        message: 'Verification successful! Please answer the recovery question.',
+        recoveryQuestion: user.recovery_question, // Send recovery question to the frontend
+        userID: user.enrolmentID, // Send user ID for further use (e.g., resetting password)
+      });
     } catch (error) {
       console.error('Server error:', error);
       res.status(500).json({ message: 'Server error' });
     }
   }
 
-  // Handle non-POST requests
   return res.status(405).json({ message: 'Method Not Allowed' });
 }
