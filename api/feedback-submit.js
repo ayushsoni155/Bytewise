@@ -45,6 +45,8 @@ export default async function handler(req, res) {
 
     // Generate a random feedbackID using UUID (you can also use any other random string generation method)
     const feedbackID = randomUUID();
+    const feedback_date = new Date();
+    const formattedfeedback_date = orderDate.toISOString().slice(0, 19).replace('T', ' '); // Format as YYYY-MM-DD HH:MM:SS
 
     // Log the random feedbackID
     console.log('Generated feedbackID:', feedbackID);
@@ -57,7 +59,7 @@ export default async function handler(req, res) {
 
     // Insert the feedback into the database, including the generated feedbackID
     const [result] = await conn.query(
-      'INSERT INTO feedback (feedbackID, feedback_enrolmentID, feedback_text) VALUES (?, ?, ?)',
+      'INSERT INTO feedback (feedbackID, feedback_enrolmentID, feedback_text,feedback_date) VALUES (?, ?, ?)',
       [feedbackID, enrolmentID, feedback]
     );
 
