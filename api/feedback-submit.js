@@ -46,10 +46,17 @@ export default async function handler(req, res) {
     // Generate a random feedbackID using UUID
     const feedbackID = randomUUID();
     const feedback_date = new Date();
-    const formattedfeedback_date = feedback_date.toISOString().slice(0, 19).replace('T', ' '); // Format as YYYY-MM-DD HH:MM:SS
 
-    // Log the random feedbackID
+    // Add 5 hours and 30 minutes to the current date
+    feedback_date.setHours(feedback_date.getHours() + 5);
+    feedback_date.setMinutes(feedback_date.getMinutes() + 30);
+
+    // Format the feedback_date as 'YYYY-MM-DD HH:MM:SS' for MySQL DATETIME format
+    const formattedfeedback_date = feedback_date.toISOString().slice(0, 19).replace('T', ' ');
+
+    // Log the random feedbackID and the adjusted date
     console.log('Generated feedbackID:', feedbackID);
+    console.log('Adjusted feedback_date:', formattedfeedback_date);
 
     // Get a connection from the database
     const conn = await db.getConnection();
