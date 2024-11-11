@@ -1,4 +1,3 @@
-
 import mysql from 'mysql2/promise';
 import { v4 as uuidv4 } from 'uuid';
 import Cors from 'cors';
@@ -54,8 +53,14 @@ export default async function handler(req, res) {
     }
 
     const orderID = uuidv4();
+
+    // Create the order date and add 5 hours and 30 minutes
     const orderDate = new Date();
-    const formattedOrderDate = orderDate.toISOString().slice(0, 19).replace('T', ' '); // Format as YYYY-MM-DD HH:MM:SS
+    orderDate.setHours(orderDate.getHours() + 5);    // Add 5 hours
+    orderDate.setMinutes(orderDate.getMinutes() + 30); // Add 30 minutes
+
+    // Format the order date as 'YYYY-MM-DD HH:MM:SS'
+    const formattedOrderDate = orderDate.toISOString().slice(0, 19).replace('T', ' ');
 
     let conn;
 
