@@ -6,13 +6,6 @@ const cors = Cors({
   origin: 'https://bytewise24.vercel.app', // Your frontend URL
   credentials: true,
 });
-// Setup the database connection pool
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
 
 function runMiddleware(req, res, fn) {
   return new Promise((resolve, reject) => {
@@ -29,8 +22,9 @@ export default async function handler(req, res) {
   // Run the CORS middleware first to handle the preflight request
   await runMiddleware(req, res, cors);
 
+  // If it's a preflight `OPTIONS` request, simply respond with 200 status
   if (req.method === 'OPTIONS') {
-    // If it's a preflight `OPTIONS` request, simply respond with 200 status
+    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app');
     return res.status(200).end();
   }
 
@@ -71,7 +65,6 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ message: 'Answer verified! You can now reset your password.' });
-      redirectUrl: 'https://bytewise24.vercel.app/reset-password', 
     }
 
     return res.status(405).json({ message: 'Method Not Allowed' });
