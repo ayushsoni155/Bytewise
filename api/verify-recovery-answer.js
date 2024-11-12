@@ -1,10 +1,11 @@
 import Cors from 'cors';
 import mysql from 'mysql2/promise';
 
+// Initialize CORS middleware
 const cors = Cors({
   methods: ['POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  origin: 'https://bytewise24.vercel.app', // Your frontend URL
+  origin: 'https://bytewise24.vercel.app',
   credentials: true,
 });
 
@@ -19,6 +20,7 @@ function runMiddleware(req, res, fn) {
   });
 }
 
+// Setup the database connection pool
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -42,7 +44,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const { userID, recoveryAnswer } = req.body;
-       localStorage.setItem('enrolID', userID);
+
       if (!userID || !recoveryAnswer) {
         console.log('Invalid input, missing userID or recoveryAnswer');
         return res.status(400).json({ message: 'User ID and recovery answer are required' });
@@ -80,7 +82,25 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'Incorrect answer' });
       }
 
-      return res.status(200).json({ message: 'Answer verified! You can now reset your password.' });
+      // If the answer is correct, proceed with password reset API
+      // Example: Send `enrolmentID` to the reset password API
+      const resetResponse = await fetch('https://bytewise-server.vercel.app/api/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          enrolmentID: userID, // Pass the enrolmentID
+        }),
+      });
+
+      const resetData = await resetResponse.json();
+
+      if (resetResponse.ok) {
+        return res.status(200).json({ message: 'Answer verified! You can now reset your password.' });
+      } else {
+        return res.status(500).json({ message: 'Error while initiating password reset.' });
+      }
     }
 
     return res.status(405).json({ message: 'Method Not Allowed' });
