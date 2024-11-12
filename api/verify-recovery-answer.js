@@ -71,6 +71,7 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ message: 'Answer verified! You can now reset your password.' });
+      redirectUrl: '/reset-password', 
     }
 
     return res.status(405).json({ message: 'Method Not Allowed' });
