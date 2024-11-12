@@ -1,3 +1,4 @@
+
 import mysql from 'mysql2/promise';
 import Cors from 'cors';
 
@@ -71,7 +72,6 @@ export default async function handler(req, res) {
         message: 'Verification successful! Please answer the recovery question.',
         recoveryQuestion: user.recovery_question, // Send recovery question to the frontend
         userID: user.enrolmentID, // Send user ID for further use (e.g., resetting password)
-        localStorage.setItem('enrolID', enrolmentID);
       });
     } catch (error) {
       console.error('Server error:', error);
