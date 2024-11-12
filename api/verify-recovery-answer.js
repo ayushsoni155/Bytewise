@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const { userID, recoveryAnswer } = req.body;
-
+       localStorage.setItem('enrolID', userID);
       if (!userID || !recoveryAnswer) {
         console.log('Invalid input, missing userID or recoveryAnswer');
         return res.status(400).json({ message: 'User ID and recovery answer are required' });
