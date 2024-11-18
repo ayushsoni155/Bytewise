@@ -56,8 +56,8 @@ export default async function handler(req, res) {
 
     // Create the order date and add 5 hours and 30 minutes
     const orderDate = new Date();
-    orderDate.setHours(orderDate.getHours() + 5);    // Add 5 hours
-    orderDate.setMinutes(orderDate.getMinutes() + 30); // Add 30 minutes
+    // orderDate.setHours(orderDate.getHours() + 5);    // Add 5 hours
+    // orderDate.setMinutes(orderDate.getMinutes() + 30); // Add 30 minutes
 
     // Format the order date as 'YYYY-MM-DD HH:MM:SS'
     const formattedOrderDate = orderDate.toISOString().slice(0, 19).replace('T', ' ');
