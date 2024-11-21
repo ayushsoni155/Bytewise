@@ -1,5 +1,4 @@
 import mysql from 'mysql2/promise';
-import { v4 as uuidv4 } from 'uuid';
 import Cors from 'cors';
 
 // Initialize CORS middleware
@@ -20,6 +19,13 @@ function runMiddleware(req, res, fn) {
       return resolve(result);
     });
   });
+}
+
+// Function to generate a short unique ID
+function generateShortId() {
+  const timestamp = Date.now().toString(36); // Base36 timestamp
+  const randomPart = Math.random().toString(36).substring(2, 8); // Random 6 characters
+  return `${timestamp}${randomPart}`; // Combine for a short unique ID
 }
 
 // Set up the database connection pool
@@ -52,14 +58,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const orderID = uuidv4();
+    const orderID = generateShortId(); // Use the new short ID generator
 
     // Create the order date and add 5 hours and 30 minutes
     const orderDate = new Date();
-    // orderDate.setHours(orderDate.getHours() + 5);    // Add 5 hours
-    // orderDate.setMinutes(orderDate.getMinutes() + 30); // Add 30 minutes
-
-    // Format the order date as 'YYYY-MM-DD HH:MM:SS'
     const formattedOrderDate = orderDate.toISOString().slice(0, 19).replace('T', ' ');
 
     let conn;
@@ -74,7 +76,7 @@ export default async function handler(req, res) {
       // Insert the order into the orders table
       const [orderResult] = await conn.query(
         `INSERT INTO bytewise_db.orders (orderID, enrolmentID, transactionID, order_date, total_price, completeStatus) VALUES (?, ?, ?, ?, ?, ?)`,
-        [orderID, enrolmentID, transactionID, formattedOrderDate, totalPrice,'Pending']
+        [orderID, enrolmentID, transactionID, formattedOrderDate, totalPrice, 'Pending']
       );
 
       // Log result of inserting order
@@ -82,7 +84,7 @@ export default async function handler(req, res) {
 
       // Insert the order items into the order_items table
       for (const item of orderItems) {
-        const orderItemsID = uuidv4();  // Generate a unique ID for each order item
+        const orderItemsID = generateShortId(); // Generate a short ID for each order item
 
         const [itemResult] = await conn.query(
           `INSERT INTO order_items (order_itemsID, orderID, subject_code, item_quantity, item_price) VALUES (?, ?, ?, ?, ?)`,
