@@ -1,5 +1,6 @@
+
 import mysql from 'mysql2/promise';
-import Cors from 'cors';
+import Cors from 'cors'; 
 
 // Initialize CORS middleware
 const cors = Cors({
@@ -46,8 +47,6 @@ export default async function handler(req, res) {
 
   try {
     const conn = await db.getConnection();
-
-    // Fetch orders for the given enrolmentID
     const [orders] = await conn.query(
       'SELECT * FROM orders WHERE enrolmentID = ? ORDER BY order_date DESC',
       [enrolmentID]
@@ -62,20 +61,14 @@ export default async function handler(req, res) {
 
       return {
         ...order,
-        items: orderItems, // Attach order items to the order
+        items: orderItems,  // Attach order items to the order
       };
     }));
-
-    // Fetch all product details
-    const [products] = await conn.query('SELECT * FROM product_details');
-
+    const [product] =  await conn.query('select * from productbw');
     conn.release();
 
-    // Send the enhanced orders with items and product details
-    res.status(200).json({
-      orders: ordersWithItems,
-      products, // Include product details in the response
-    });
+    // Send the enhanced orders with item details
+    res.status(200).json(ordersWithItems,product);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
