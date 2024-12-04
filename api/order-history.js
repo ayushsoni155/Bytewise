@@ -1,6 +1,5 @@
-
 import mysql from 'mysql2/promise';
-import Cors from 'cors'; 
+import Cors from 'cors';
 
 // Initialize CORS middleware
 const cors = Cors({
@@ -47,28 +46,35 @@ export default async function handler(req, res) {
 
   try {
     const conn = await db.getConnection();
+
+    // Fetch orders for the user
     const [orders] = await conn.query(
       'SELECT * FROM orders WHERE enrolmentID = ? ORDER BY order_date DESC',
       [enrolmentID]
     );
 
     // For each order, fetch the associated order items
-    const ordersWithItems = await Promise.all(orders.map(async (order) => {
-      const [orderItems] = await conn.query(
-        'SELECT * FROM order_items WHERE orderID = ?',
-        [order.orderID]
-      );
+    const ordersWithItems = await Promise.all(
+      orders.map(async (order) => {
+        const [orderItems] = await conn.query(
+          'SELECT * FROM order_items WHERE orderID = ?',
+          [order.orderID]
+        );
+        return {
+          ...order,
+          items: orderItems, // Attach order items to the order
+        };
+      })
+    );
 
-      return {
-        ...order,
-        items: orderItems,  // Attach order items to the order
-      };
-    }));
-    const [product] =  await conn.query('select * from productbw');
+    // Fetch all products
+    const [products] = await conn.query('SELECT * FROM productbw');
+
+    // Release the connection
     conn.release();
 
-    // Send the enhanced orders with item details
-    res.status(200).json(ordersWithItems,product);
+    // Send response with both orders and products
+    res.status(200).json({ orders: ordersWithItems, products });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
