@@ -45,14 +45,15 @@ export default async function handler(req, res) {
   // Handle GET requests (fetch lab manuals)
   if (req.method === 'GET') {
     try {
-      const [results] = await db.query('SELECT * FROM productbw WHERE subject_code != `CS508`'); // Assuming MySQL database
+      const [results] = await db.query('SELECT * FROM productbw WHERE subject_code != ?', ['CS508']); // Correct syntax for the query
       return res.status(200).json(results);
     } catch (error) {
-      console.error('Error fetching lab manuals:', error);
-      return res.status(500).json({ message: 'Server error' });
+      console.error('Error fetching lab manuals:', error.message);
+      return res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 
   // Handle non-GET requests
+  res.setHeader('Allow', ['GET', 'OPTIONS']);
   return res.status(405).json({ message: 'Method Not Allowed' });
 }
