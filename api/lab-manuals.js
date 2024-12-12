@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   // Handle GET requests (fetch lab manuals)
   if (req.method === 'GET') {
     try {
-      const [results] = await db.query('SELECT * FROM productbw WHERE subject_code != ?', ['CS508']); // Correct syntax for the query
+      const [results] = await db.query('SELECT * FROM productbw WHERE subject_code != ?', ['CS508','CS509','CS510']); // Correct syntax for the query
       return res.status(200).json(results);
     } catch (error) {
       console.error('Error fetching lab manuals:', error.message);
