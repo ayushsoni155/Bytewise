@@ -6,7 +6,7 @@ const cors = Cors({
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers (adjust as needed)
   origin: 'https://bytewise24.vercel.app', // Set your frontend URL
-  credentials: true, // Allow cookies if needed
+  credentials: true, // Allow cookies if needed 
 });
 
 // Helper function to run middleware h
