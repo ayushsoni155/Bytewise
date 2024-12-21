@@ -4,7 +4,6 @@ import Cors from 'cors';
 // Initialize CORS middleware
 const cors = Cors({
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
   origin: 'https://bytewise24.vercel.app', // Set your frontend URL
   credentials: true,
 });
@@ -30,63 +29,60 @@ const db = mysql.createPool({
 });
 
 export default async function handler(req, res) {
-  // Enable CORS for this API route
-  await runMiddleware(req, res, cors);
+  try {
+    // Enable CORS for this API route
+    await runMiddleware(req, res, cors);
 
-  // Handle OPTIONS request (for preflight CORS check)
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Origin', 'https://bytewise24.vercel.app'); // Set the frontend URL
-    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
-    return res.status(200).end();
-  }
-
-  // Handle POST requests for cookie data verification
-  if (req.method === 'POST') {
-    const { enrolmentID, name, sem, phone} = req.body;
-
-    // Check if all fields are provided
-    if (!enrolmentID || !name || !sem || !phone) {
-      return res.status(400).json({ message: 'Incomplete data provided' });
+    // Handle OPTIONS request (preflight check)
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
     }
 
-    try {
+    // Handle POST requests
+    if (req.method === 'POST') {
+      const { enrolmentID, name, sem, phone } = req.body;
+
+      // Validate input data
+      if (!enrolmentID || !name || !sem || !phone) {
+        return res.status(400).json({ message: 'Incomplete data provided' });
+      }
+
       const conn = await db.getConnection();
 
-      // Query the database for the user data
-      const [results] = await conn.query(
-        'SELECT name, sem, phone FROM user_info WHERE enrolmentID = ?',
-        [enrolmentID]
-      );
+      try {
+        // Query the database for user data
+        const [results] = await conn.query(
+          'SELECT name, sem, phone FROM user_info WHERE enrolmentID = ?',
+          [enrolmentID]
+        );
 
-      // Release the connection back to the pool
-      conn.release();
+        // Release the connection back to the pool
+        conn.release();
 
-      // Check if the user exists
-      if (results.length === 0) {
-        return res.status(401).json({ message: 'User not found' });
+        // Check if the user exists
+        if (results.length === 0) {
+          return res.status(401).json({ message: 'User not found' });
+        }
+
+        const user = results[0];
+
+        // Verify if the cookie data matches the database record
+        if (user.name !== name || user.sem !== sem || user.phone !== phone) {
+          return res.status(401).json({ message: 'Cookie data mismatch. Logging out.' });
+        }
+
+        // Return success response if data matches
+        return res.status(200).json({ message: 'Cookie data verified', user });
+      } catch (error) {
+        conn.release();
+        throw error;
       }
-
-      const user = results[0];
-
-      // Verify if the cookie data matches the database record
-      if (
-        user.name !== name ||
-        user.sem !== sem ||
-        user.phone !== phone ||
-      ) {
-        return res.status(401).json({ message: 'Cookie data mismatch. Logging out.' });
-      }
-
-      // Return success response if data matches
-      return res.status(200).json({ message: 'Cookie data verified', user });
-    } catch (error) {
-      console.error('Server error:', error);
-      return res.status(500).json({ message: 'Server error' });
     }
-  }
 
-  // Handle non-POST requests
-  return res.status(405).json({ message: 'Method Not Allowed' });
+    // Handle other methods
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  } catch (error) {
+    console.error('Server error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
 }
