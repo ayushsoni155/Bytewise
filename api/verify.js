@@ -72,7 +72,7 @@ export default async function handler(req, res) {
         }
 
         // Return success response if data matches
-        return res.status(200).json({ message: 'Cookie data verified', user });
+        return res.status(200).json({ message: 'Cookie data verified';
       } catch (error) {
         conn.release();
         throw error;
