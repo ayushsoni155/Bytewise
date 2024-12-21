@@ -44,10 +44,10 @@ export default async function handler(req, res) {
 
   // Handle POST requests for cookie data verification
   if (req.method === 'POST') {
-    const { enrolmentID, name, sem, phone, status } = req.body;
+    const { enrolmentID, name, sem, phone} = req.body;
 
     // Check if all fields are provided
-    if (!enrolmentID || !name || !sem || !phone || typeof status !== 'boolean') {
+    if (!enrolmentID || !name || !sem || !phone) {
       return res.status(400).json({ message: 'Incomplete data provided' });
     }
 
@@ -75,7 +75,6 @@ export default async function handler(req, res) {
         user.name !== name ||
         user.sem !== sem ||
         user.phone !== phone ||
-        status !== true
       ) {
         return res.status(401).json({ message: 'Cookie data mismatch. Logging out.' });
       }
