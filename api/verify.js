@@ -47,7 +47,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'Incomplete data provided' });
       }
 
-      const conn = await db.getConnection();
+      const conn = await db.getConnection(); // Get a database connection
 
       try {
         // Query the database for user data
@@ -72,17 +72,18 @@ export default async function handler(req, res) {
         }
 
         // Return success response if data matches
-        return res.status(200).json({ message: 'Cookie data verified';
+        return res.status(200).json({ message: 'Cookie data verified' });
       } catch (error) {
-        conn.release();
-        throw error;
+        conn.release(); // Ensure the connection is released in case of error
+        console.error('Database query error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
       }
     }
 
-    // Handle other methods
+    // Handle other HTTP methods
     return res.status(405).json({ message: 'Method Not Allowed' });
   } catch (error) {
     console.error('Server error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 }
