@@ -74,7 +74,7 @@ export default async function handler(req, res) {
 
       // Insert the order into the orders table
       const [orderResult] = await conn.query(
-        `INSERT INTO bytewise_db.orders (orderID, enrolmentID, payment_Method, transactionID, order_date, paymentStatus total_price, completeStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO bytewise_db.orders (orderID, enrolmentID, payment_Method, transactionID, order_date, paymentStatus, total_price, completeStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [orderID, enrolmentID, payment_Method, transactionID, formattedOrderDate, paymentStatus, totalPrice, 'Pending']
       );
 
