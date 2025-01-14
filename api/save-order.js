@@ -87,7 +87,7 @@ export default async function handler(req, res) {
 
         const [itemResult] = await conn.query(
           `INSERT INTO order_items (order_itemsID, orderID, subject_code, item_quantity, item_price) VALUES (?, ?, ?, ?, ?)`,
-          [orderItemsID, orderID, item.Subject_code, item.item_quantity, item.item_price]
+          [orderItemsID, orderID, item.subject_code, item.item_quantity, item.item_price]
         );
 
         // Log result of inserting each item
