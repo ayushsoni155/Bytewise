@@ -51,10 +51,10 @@ export default async function handler(req, res) {
 
   // Handle POST request (save order logic)
   if (req.method === 'POST') {
-    const { enrolmentID, orderItems, totalPrice, transactionID } = req.body;
+    const { enrolmentID, orderItems, payment_Method, paymentStatus, totalPrice, transactionID } = req.body;
 
     // Ensure all fields are present
-    if (!enrolmentID || !orderItems || !totalPrice || !transactionID) {
+    if (!enrolmentID || !orderItems || !payment_Method || !paymentStatus || !totalPrice || !transactionID) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -68,15 +68,14 @@ export default async function handler(req, res) {
 
     try {
       // Log incoming data for debugging
-      console.log('Received order data:', { enrolmentID, orderItems, totalPrice, transactionID });
 
       conn = await db.getConnection();
       await conn.beginTransaction();
 
       // Insert the order into the orders table
       const [orderResult] = await conn.query(
-        `INSERT INTO bytewise_db.orders (orderID, enrolmentID, transactionID, order_date, total_price, completeStatus) VALUES (?, ?, ?, ?, ?, ?)`,
-        [orderID, enrolmentID, transactionID, formattedOrderDate, totalPrice, 'Pending']
+        `INSERT INTO bytewise_db.orders (orderID, enrolmentID, payment_Method, transactionID, order_date, paymentStatus total_price, completeStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [orderID, enrolmentID, payment_Method, transactionID, formattedOrderDate, paymentStatus, totalPrice, 'Pending']
       );
 
       // Log result of inserting order
