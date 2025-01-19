@@ -45,7 +45,9 @@ export default async function handler(req, res) {
 
     // Handle DELETE requests
     if (req.method === 'DELETE') {
-      const { enrolmentID } = req.query;
+      // Parse the request body
+      const body = req.body;
+      const { enrolmentID } = typeof body === 'string' ? JSON.parse(body) : body;
 
       // Validate input
       if (!enrolmentID) {
