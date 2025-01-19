@@ -45,18 +45,17 @@ export default async function handler(req, res) {
 
     // Handle DELETE requests
     if (req.method === 'DELETE') {
-      // Parse the request body
-      const body = req.body;
-      const { enrolmentID } = typeof body === 'string' ? JSON.parse(body) : body;
+      // Parse the request body to get the enrolment ID
+      const { searchEnrolmentID } = req.body;
 
       // Validate input
-      if (!enrolmentID) {
+      if (!searchEnrolmentID) {
         return res.status(400).json({ error: 'Enrollment ID is required.' });
       }
 
       // Query to delete the user by enrollment ID
       const query = `DELETE FROM user_info WHERE enrolmentID = ?`;
-      const [result] = await db.query(query, [enrolmentID]);
+      const [result] = await db.query(query, [searchEnrolmentID]);
 
       // Check if any row was affected
       if (result.affectedRows === 0) {
